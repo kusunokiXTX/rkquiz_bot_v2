@@ -22,7 +22,7 @@ intents.message_content = True  # メッセージの内容を読み取る権限�
 
 # OpenAIクライアントの設定
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-model = "gpt-4o-mini"
+model = "gpt-4o-2024-11-20" #gptモデルを選択する必要がある。
 
 #jsonファイルの読み込み
 json_pass = os.path.join(os.path.dirname(__file__), "questions")  # JSONファイルのパス
@@ -114,7 +114,7 @@ async def on_message(message):
     if message.author == bot.user:
         return
 
-    if re.match(r'^[@＠]', message.content):
+    if re.match(r'^[=＝]', message.content):
         if quiz_state.current_quiz_index != -1 and message.channel == quiz_state.current_quiz_channel:
             print(f"答えを受け付けました: {message.content}")
             quiz_state.last_question_time = datetime.datetime.now()
@@ -133,16 +133,23 @@ async def on_message(message):
             elif answer_result['answer'] == '部分一致':
                 if similarity_score_answer >= 0.7:
                     await message.channel.send("一部は正解です！素晴らしいですね！ただ、もう少しだけ要素が足りないようです。\n方向性の正しさ: {}% です。".format(int(similarity_score_answer * 100)))
+                    await send_question(message.channel)
                 elif similarity_score_answer >= 0.6:
                     await message.channel.send("一部は正解です！良い線いっていますが、もう少し深く考えてみましょう。\n方向性の正しさ: {}% です。".format(int(similarity_score_answer * 100)))
+                    await send_question(message.channel)
                 elif similarity_score_answer >= 0.5:
                     await message.channel.send("一部は正解です！でも、まだ足りない要素がありますね。もう少し頑張ってみてください。\n方向性の正しさ: {}% です。".format(int(similarity_score_answer * 100)))
+                    await send_question(message.channel)
+                elif similarity_score_answer >= 0.0:
+                    await message.channel.send("一部は正解です。もう一度考えてみてください。")
+                    await send_question(message.channel)
             else:
                 await message.channel.send("不正解です。もう一度考えてみてください。")
+                await send_question(message.channel)
         else:
             await message.channel.send("クイズが開始されていないか、クイズが行われているチャンネルではありません。")
 
-    if re.match(r'^[＃#]', message.content):
+    if re.match(r'^[?？]', message.content):
         if quiz_state.current_quiz_index != -1 and message.channel == quiz_state.current_quiz_channel:
             print(f"質問を受け付けました: {message.content}")
             quiz_state.last_question_time = datetime.datetime.now()
@@ -163,6 +170,8 @@ async def on_message(message):
                 elif similarity_score_question >= 0.3:
                     feedback_index = random.randint(0, len(feedback["low_list"]) - 1)
                     await message.channel.send("はい。\n" + feedback["low_list"][feedback_index])
+                elif similarity_score_question >= 0.0:
+                    await message.channel.send("はい。\n" + "その質問はあまりよくないですね。")
             elif question_result is not None and question_result['answer'] == 'いいえ':
                 if similarity_score_question >= 0.7:
                     feedback_index = random.randint(0, len(feedback["high_list"]) - 1)
@@ -173,6 +182,8 @@ async def on_message(message):
                 elif similarity_score_question >= 0.3:
                     feedback_index = random.randint(0, len(feedback["low_list"]) - 1)
                     await message.channel.send("いいえ。\n" + feedback["low_list"][feedback_index])
+                elif similarity_score_question >= 0.0:
+                    await message.channel.send("いいえ。\n" + "その質問はあまりよくないですね。")
             elif question_result is not None and question_result['answer'] == 'わからない':
                 await message.channel.send("わかりません。")
             else:

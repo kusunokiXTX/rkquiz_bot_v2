@@ -41,4 +41,4 @@ def update_embeddings_in_json(file_path):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 # 使用例
-update_embeddings_in_json('horizontal-bot/rkquiz_bot_v2/questions/4.json')
+update_embeddings_in_json('horizontal-bot/rkquiz_bot_v2/questions/0.json')
